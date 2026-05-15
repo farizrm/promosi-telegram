@@ -14,7 +14,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write("<h1>🚀 Mesin Promosi Micifind (Auto-Stop Banned) Aktif!</h1>".encode('utf-8'))
+        self.wfile.write("<h1>🚀 Mesin Promosi Micifind (Natural Flow) Aktif!</h1>".encode('utf-8'))
         
     def do_HEAD(self):
         self.send_response(200)
@@ -33,7 +33,7 @@ API_ID = int(os.environ.get("API_ID"))
 API_HASH = os.environ.get("API_HASH")
 TARGET_BOT = '@chatbot' # Ganti dengan bot anonim target
 
-# NAMA PENDEK STIKER PACK (Pastikan sudah sesuai)
+# NAMA PENDEK STIKER PACK
 STICKER_PACK_SHORT_NAME = "micifindbot"
 
 # Variasi Sapaan (Spintax)
@@ -74,16 +74,17 @@ async def run_promoter(nama_akun, session_string):
 
         while True:
             try:
-                # 1. Kirim /next
+                # 1. Kirim /next lalu /search (Langsung berurutan)
                 await client.send_message(TARGET_BOT, '/next')
-                print(f"🔄 [{nama_akun}] Command /next dikirim!")
+                await client.send_message(TARGET_BOT, '/search')
+                print(f"🔄 [{nama_akun}] Command /next dan /search dikirim!")
                 
-                # 2. Diam 1 detik
-                await asyncio.sleep(1.0)
+                # 2. Diam 4 detik
+                await asyncio.sleep(4.0)
                 
                 # --- SISTEM DETEKSI BANNED ---
-                # Mengambil 2 pesan terakhir dalam obrolan untuk dicek
-                recent_messages = await client.get_messages(TARGET_BOT, limit=2)
+                # Mengecek apakah dalam 4 detik terakhir bot target membalas dengan pesan Banned
+                recent_messages = await client.get_messages(TARGET_BOT, limit=3)
                 is_banned = False
                 for msg in recent_messages:
                     if msg.text and "You have been banned due to rules violation" in msg.text:
@@ -95,36 +96,41 @@ async def run_promoter(nama_akun, session_string):
                     print(f"🚫 [{nama_akun}] TERDETEKSI BANNED! Akun dihentikan selama 25 Jam.")
                     await asyncio.sleep(25 * 3600)
                     print(f"🟢 [{nama_akun}] Masa hukuman 25 Jam selesai! Melanjutkan promosi...")
-                    continue # Melompat ke awal loop (kembali ke /next)
+                    continue # Melompat ke awal loop
 
                 # 3. Kalimat sapaan
                 sapaan = random.choice(GREETINGS)
                 await client.send_message(TARGET_BOT, sapaan)
                 print(f"👋 [{nama_akun}] Sapaan '{sapaan}' dikirim!")
                 
-                # 4. Tunggu 2 detik
-                await asyncio.sleep(2.0)
+                # 4. Bot menunggu 3 detik
+                await asyncio.sleep(3.0)
                 
-                # 5. Kalimat promosi 
+                # 5. Kalimat promosi (terserah yang mana aja)
                 promo = random.choice(PROMO_MESSAGES)
                 await client.send_message(TARGET_BOT, promo)
                 print(f"💬 [{nama_akun}] Teks promosi dikirim!")
                 
                 # 6. Kirim stiker
                 if has_sticker:
-                    await client.send_file(TARGET_BOT, promo_sticker)
-                    print(f"🖼️ [{nama_akun}] Stiker berhasil dikirim!")
+                    try:
+                        # Mengirim objek stiker langsung dari server Telegram
+                        await client.send_file(TARGET_BOT, promo_sticker)
+                        print(f"🖼️ [{nama_akun}] Stiker berhasil dikirim!")
+                    except Exception as sticker_err:
+                        print(f"⚠️ [{nama_akun}] Gagal saat mengirim stiker: {sticker_err}")
                 
                 # 7. Kirim /stop
                 await client.send_message(TARGET_BOT, '/stop')
                 print(f"🛑 [{nama_akun}] Command /stop dikirim!")
                 
-                # 8. Looping terus menerus
-                print(f"🔁 [{nama_akun}] Looping ke /next selanjutnya...\n")
+                # 8. Diam 5 detik sebelum looping
+                print(f"💤 [{nama_akun}] Diam 5 detik sebelum siklus baru...\n")
+                await asyncio.sleep(5.0)
 
             except Exception as e:
                 print(f"❌ [{nama_akun}] Error saat mengirim: {e}")
-                # Jika terkena limit FloodWait dari API Telegram
+                # Jika terkena limit FloodWait dari API Telegram, istirahat 15 detik
                 await asyncio.sleep(15)
 
     except Exception as e:
