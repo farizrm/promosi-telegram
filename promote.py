@@ -5,6 +5,8 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from telethon import TelegramClient
 from telethon.sessions import StringSession
+from telethon.tl.functions.messages import GetStickerSetRequest
+from telethon.tl.types import InputStickerSetShortName
 
 # --- SETUP DUMMY SERVER UNTUK UPTIMEROBOT ---
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
@@ -12,7 +14,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write(b"<h1>🚀 Mesin Promosi Micifind (15 Akun) Aktif!</h1>")
+        self.wfile.write("<h1>🚀 Mesin Promosi Micifind (15 Akun) Aktif!</h1>".encode('utf-8'))
         
     def do_HEAD(self):
         self.send_response(200)
@@ -32,12 +34,13 @@ API_HASH = os.environ.get("API_HASH")
 TARGET_BOT = '@chatbot' # Ganti dengan bot anonim target
 PROMO_MESSAGE = "Halo! Mau match dengan teman Se-Kota? Cobain @micifindbot yuk. Bisa cari partner satu kota/provinsi, fiturnya bersih & no delay! ✨"
 
-# Nama file stiker yang sudah kamu upload ke GitHub (harus 1 folder dengan script ini)
-STICKER_FILE = "stiker.webp" 
+# --- MASUKKAN SHORT NAME STICKER PACK KAMU DI SINI ---
+# Contoh jika link stikernya t.me/addstickers/micifind_promo
+# Maka tulis "micifind_promo" di bawah ini:
+STICKER_PACK_SHORT_NAME = "micifindbot"
 
-# Mengumpulkan semua sesi yang ada di Environment
 SESSIONS = []
-for i in range(1, 16): # Range 1 sampai 15
+for i in range(1, 16): 
     session_string = os.environ.get(f"SESSION_{i}")
     if session_string:
         SESSIONS.append((f"Akun_{i}", session_string))
@@ -47,6 +50,18 @@ async def run_promoter(nama_akun, session_string):
         client = TelegramClient(StringSession(session_string), API_ID, API_HASH)
         await client.start()
         print(f"✅ [{nama_akun}] Berhasil terhubung!")
+
+        # Menarik data Stiker Resmi dari Server Telegram (Hanya dilakukan 1x di awal)
+        try:
+            sticker_set = await client(GetStickerSetRequest(
+                stickerset=InputStickerSetShortName(short_name=STICKER_PACK_SHORT_NAME)
+            ))
+            promo_sticker = sticker_set.documents[0] # Mengambil stiker urutan pertama
+            has_sticker = True
+            print(f"📦 [{nama_akun}] Berhasil memuat Stiker Pack Resmi!")
+        except Exception as e:
+            print(f"⚠️ [{nama_akun}] Gagal memuat stiker pack: {e}")
+            has_sticker = False
 
         # Pancingan awal agar bot target merespons
         await client.send_message(TARGET_BOT, '/search')
@@ -58,29 +73,22 @@ async def run_promoter(nama_akun, session_string):
                 await client.send_message(TARGET_BOT, '/next')
                 print(f"🔄 [{nama_akun}] Mencari partner...")
                 
-                # Menunggu partner ditemukan (Jeda acak agar terlihat natural)
                 await asyncio.sleep(random.uniform(5.0, 10.0))
                 
                 # 1. Kirim pesan promosi teks
                 await client.send_message(TARGET_BOT, PROMO_MESSAGE)
                 print(f"💬 [{nama_akun}] Teks promosi terkirim!")
                 
-                # Jeda 1-2 detik layaknya manusia mengetik/memilih stiker
                 await asyncio.sleep(random.uniform(1.0, 2.0))
                 
-                # 2. Kirim Stiker Promosi
-                if os.path.exists(STICKER_FILE):
-                    await client.send_file(TARGET_BOT, STICKER_FILE)
-                    print(f"🖼️ [{nama_akun}] Stiker berhasil dikirim!")
-                else:
-                    print(f"⚠️ [{nama_akun}] File stiker ({STICKER_FILE}) tidak ditemukan di server!")
+                # 2. Kirim Stiker Promosi Resmi
+                if has_sticker:
+                    await client.send_file(TARGET_BOT, promo_sticker)
+                    print(f"🖼️ [{nama_akun}] Stiker promosi berhasil dikirim!")
                 
-                # Jeda sebentar sebelum stop
                 await asyncio.sleep(random.uniform(2.0, 4.0))
                 await client.send_message(TARGET_BOT, '/stop')
                 
-                # COOLDOWN: Sangat penting agar akun tidak diblokir Telegram
-                # Dengan 15 akun, jeda 30-60 detik per akun sudah sangat aman
                 wait_time = random.uniform(30.0, 60.0)
                 print(f"💤 [{nama_akun}] Istirahat {wait_time:.1f} detik...")
                 await asyncio.sleep(wait_time)
