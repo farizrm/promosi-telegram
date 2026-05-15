@@ -79,7 +79,6 @@ async def run_promoter(nama_akun, session_string):
                 await client.send_message(TARGET_BOT, PROMO_MESSAGE)
                 print(f"💬 [{nama_akun}] Teks promosi terkirim!")
                 
-                await asyncio.sleep(random.uniform(1.0, 2.0))
                 
                 # 2. Kirim Stiker Promosi Resmi
                 if has_sticker:
