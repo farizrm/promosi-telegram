@@ -14,7 +14,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write("<h1>🚀 Mesin Promosi Micifind (Anti-Banned Edition) Aktif!</h1>".encode('utf-8'))
+        self.wfile.write("<h1>🚀 Mesin Promosi Micifind (Mode Agresif + Stiker Resmi) Aktif!</h1>".encode('utf-8'))
         
     def do_HEAD(self):
         self.send_response(200)
@@ -33,10 +33,13 @@ API_ID = int(os.environ.get("API_ID"))
 API_HASH = os.environ.get("API_HASH")
 TARGET_BOT = '@chatbot' # Ganti dengan bot anonim target
 
-# SPINTAX: Variasi Sapaan agar terlihat seperti manusia (Bypass Filter Pertama)
-GREETINGS = ["Halo", "Haii", "P", "Hi", "Haloo", "haii", "p", "halo"]
+# NAMA PENDEK STIKER PACK (Pastikan sudah sesuai)
+STICKER_PACK_SHORT_NAME = "micifindbot"
 
-# SPINTAX: Variasi Teks Promosi agar tidak terdeteksi sebagai spam massal
+# Variasi Sapaan (Spintax)
+GREETINGS = ["hii", "halo", "P", "kiw", "allooo"]
+
+# Variasi Teks Promosi
 PROMO_MESSAGES = [
     "Lagi bosen? Cobain @micifindbot yuk. Bisa cari partner satu kota, fiturnya bersih & no delay! ✨",
     "Eh cobain @micifindbot deh, bot anonim baru bisa milih temen se-kota/provinsi. Lebih rapi tampilannya 👌",
@@ -44,9 +47,7 @@ PROMO_MESSAGES = [
     "Mau match sama org terdekat? di @micifindbot bisa filter kota lho, cobain aja gratis kok ✨"
 ]
 
-# --- MASUKKAN SHORT NAME STICKER PACK ---
-STICKER_PACK_SHORT_NAME = "micifindbot"
-
+# Mengumpulkan Sesi
 SESSIONS = []
 for i in range(1, 16): 
     session_string = os.environ.get(f"SESSION_{i}")
@@ -59,65 +60,51 @@ async def run_promoter(nama_akun, session_string):
         await client.start()
         print(f"✅ [{nama_akun}] Berhasil terhubung!")
 
-        # Menarik data Stiker Resmi dari Server Telegram
+        # Menarik data Stiker Resmi dari Server Telegram (Hanya dilakukan 1x di awal)
         try:
             sticker_set = await client(GetStickerSetRequest(
                 stickerset=InputStickerSetShortName(short_name=STICKER_PACK_SHORT_NAME)
             ))
-            promo_sticker = sticker_set.documents[0] 
+            promo_sticker = sticker_set.documents[0] # Mengambil stiker urutan pertama
             has_sticker = True
             print(f"📦 [{nama_akun}] Berhasil memuat Stiker Pack Resmi!")
         except Exception as e:
             print(f"⚠️ [{nama_akun}] Gagal memuat stiker pack: {e}")
             has_sticker = False
 
-        # Pancingan awal agar bot target merespons
-        await client.send_message(TARGET_BOT, '/start')
-        await asyncio.sleep(5)
-
         while True:
             try:
-                # 1. Perintah mencari partner
+                # 1. Kirim /next
                 await client.send_message(TARGET_BOT, '/next')
-                print(f"🔄 [{nama_akun}] Mencari partner...")
+                print(f"🔄 [{nama_akun}] Command /next dikirim!")
                 
-                # Tunggu partner ditemukan (Jeda agak lama agar bot target siap)
-                await asyncio.sleep(random.uniform(5.0, 8.0))
-                
-                # 2. KIRIM SAPAAN MANUSIA (Trik Bypass Anti-Spam)
+                # 2. Kirim sapaan (Hii/halo/P/kiw/allooo)
                 sapaan = random.choice(GREETINGS)
                 await client.send_message(TARGET_BOT, sapaan)
-                print(f"👋 [{nama_akun}] Mengirim sapaan: '{sapaan}'")
+                print(f"👋 [{nama_akun}] Sapaan '{sapaan}' dikirim!")
                 
-                # Jeda seolah-olah sedang mengetik pesan panjang
-                await asyncio.sleep(random.uniform(2.5, 4.5))
+                # 3. Tunggu 2 detik
+                await asyncio.sleep(2.0)
                 
-                # 3. KIRIM PESAN PROMOSI (Pilih acak dari daftar)
-                pesan_promo = random.choice(PROMO_MESSAGES)
-                await client.send_message(TARGET_BOT, pesan_promo)
-                print(f"💬 [{nama_akun}] Teks promosi terkirim!")
+                # 4. Kirim kalimat promosi (Terserah yang mana aja dari daftar)
+                promo = random.choice(PROMO_MESSAGES)
+                await client.send_message(TARGET_BOT, promo)
+                print(f"💬 [{nama_akun}] Teks promosi dikirim!")
                 
-                # Jeda sejenak sebelum kirim stiker
-                await asyncio.sleep(random.uniform(1.0, 2.0))
-                
-                # 4. KIRIM STIKER RESMI
+                # 5. Kirim stiker resmi (Tanpa jeda setelah teks, langsung eksekusi)
                 if has_sticker:
                     await client.send_file(TARGET_BOT, promo_sticker)
-                    print(f"🖼️ [{nama_akun}] Stiker promosi berhasil dikirim!")
+                    print(f"🖼️ [{nama_akun}] Stiker berhasil dikirim!")
                 
-                # Jeda agar target sempat membaca sebelum kita kabur
-                await asyncio.sleep(random.uniform(3.0, 5.0))
-                await client.send_message(TARGET_BOT, '/stop')
-                
-                # 5. COOLDOWN (Pendinginan agar tidak diblokir oleh pihak Telegram sendiri)
-                wait_time = random.uniform(35.0, 65.0)
-                print(f"💤 [{nama_akun}] Istirahat {wait_time:.1f} detik sebelum siklus berikutnya...\n")
-                await asyncio.sleep(wait_time)
+                # 6. Diam 1 detik (Lalu loop terus menerus ke langkah 1)
+                await asyncio.sleep(1.0)
+                print(f"🔁 [{nama_akun}] Looping ke /next...\n")
 
             except Exception as e:
-                print(f"❌ [{nama_akun}] Kendala saat looping: {e}")
-                # Jika terkena limit sementara dari Telegram (FloodWait)
-                await asyncio.sleep(120) 
+                print(f"❌ [{nama_akun}] Error saat mengirim: {e}")
+                # Jika diblokir atau kena limit Telegram (FloodWait)
+                await asyncio.sleep(15)
+
     except Exception as e:
         print(f"🔴 [{nama_akun}] Gagal Login: {e}")
 
@@ -126,7 +113,7 @@ async def main():
         print("⚠️ Tidak ada SESSION yang ditemukan di Environment!")
         return
 
-    print(f"Menjalankan mesin promosi Anti-Banned untuk {len(SESSIONS)} akun secara paralel...\n")
+    print(f"Menjalankan mesin promosi mode AGGRESIF untuk {len(SESSIONS)} akun...\n")
     tasks = [run_promoter(nama, string_ses) for nama, string_ses in SESSIONS]
     await asyncio.gather(*tasks)
 
